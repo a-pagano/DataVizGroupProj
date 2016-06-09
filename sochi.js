@@ -28,7 +28,7 @@ function readData(err, data)
           'curling': 'purple',
           'biathlon': 'magenta',
           'luge': 'lightgray',
-          'ice hockey': 'black',
+          'ice hockey': 'darkred',
           'bobsleigh': 'red',
           'speed skating': 'gold',
           'skeleton': 'darkgoldenrod',
