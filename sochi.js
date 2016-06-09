@@ -56,10 +56,39 @@ function readData(err, data)
         else  byGender = data.filter(function(d) { return (d.gender.toLowerCase()=="female")?true:false })
         return byGender;
     }
-
+console.log(colors)
+    var title_text = 'Sochi Olympics: Female Athletes'
     var genderData = filterByGender(1)
     var plot = d3.select('svg')
+    var title = plot.append('g')
+      .attr('transform','translate('+((canvas_width/2)-((title_text.length*20)/2))+',30)')
+      .append('text')
+      .text(title_text)
+      .attr("font-size", "30px") 
+      .attr("fill","black")
+      .attr('font-family','Courier New')
+    
+    var plot_legend = plot.append('g')
+      .attr('transform','translate(-40,10)')
+      .selectAll('g')
+      .data(Object.keys(colors).sort())
+      .enter()
       .append('g')
+    plot_legend.append('rect')
+      .attr('width','20')
+      .attr('height','20')
+      .attr('fill',function(d,i) { return colors[d] })
+      .attr('x',50)
+      .attr('y',function(d,i) { return (i*21) })
+    plot_legend.append('text')
+      .text(function(d,i) { return d })
+      .attr('x',75)
+      .attr('y',function(d,i) { return 15+(i*21) })
+      .attr("font-size", "18px") 
+      .attr("fill","black")
+      .attr('font-family','Courier New')
+    
+    var plot_area = plot.append('g')
       .attr('transform','translate('+(50+size)+','+size+')')
       .selectAll('circle')
       .data(genderData)
@@ -72,6 +101,7 @@ function readData(err, data)
       .attr('fill',function(d,i) { return colors[String(d.sport).toLowerCase()]  })
       .style('stroke',function(d,i) { return Number(d.total_medals)>0?'black':'none' })
       .style('stroke-width',function(d,i) { return Number(d.total_medals)>0?'3':'0' })
+
         .on('mouseenter', function(d, i) {
             highlightSports(d.sport)
         })
@@ -84,11 +114,14 @@ function readData(err, data)
         
     
       
+
+    
+
     function updateChart(g)
     {
       genderData = filterByGender(g)
       
-      plot.data(genderData)
+      plot_area.data(genderData)
           .transition()
           .duration(1000)
           .attr('r',function(d,i) { return Number(d.total_medals)>0?medals_size:size })
@@ -97,7 +130,11 @@ function readData(err, data)
           .attr('fill',function(d,i) { return colors[String(d.sport).toLowerCase()]  })
           .style('stroke',function(d,i) { return Number(d.total_medals)>0?'black':'none' })
           .style('stroke-width',function(d,i) { return Number(d.total_medals)>0?'3':'0' })
-          .attr('opacity',function(d,i) { return (d.gender.toLowerCase()=="male")?medals_opacity:opacity })
+
+          .attr('opacity',function(d,i) { return Number(d.total_medals)>0?medals_opacity:opacity })
+      
+      title_text = g==0?'Sochi Olympics: Male Athletes':'Sochi Olympics: Female Athletes'
+      title.text(title_text)
 
 
       button.text(g==0?"Males":"Females")
