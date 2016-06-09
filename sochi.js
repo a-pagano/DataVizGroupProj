@@ -72,6 +72,17 @@ function readData(err, data)
       .attr('fill',function(d,i) { return colors[String(d.sport).toLowerCase()]  })
       .style('stroke',function(d,i) { return Number(d.total_medals)>0?'black':'none' })
       .style('stroke-width',function(d,i) { return Number(d.total_medals)>0?'3':'0' })
+        .on('mouseenter', function(d, i) {
+            highlightSports(d.sport)
+        })
+        .on('mouseleave', function(d, i) {
+            d3.select('svg')
+            .selectAll('circle')
+            .data(genderData)
+            .attr('opacity',function(d,i) { return Number(d.total_medals)>0?medals_opacity:opacity })
+        })
+        
+    
       
     function updateChart(g)
     {
@@ -86,18 +97,31 @@ function readData(err, data)
           .attr('fill',function(d,i) { return colors[String(d.sport).toLowerCase()]  })
           .style('stroke',function(d,i) { return Number(d.total_medals)>0?'black':'none' })
           .style('stroke-width',function(d,i) { return Number(d.total_medals)>0?'3':'0' })
-          .attr('opacity',function(d,i) { return Number(d.total_medals)>0?medals_opacity:opacity })
+          .attr('opacity',function(d,i) { return (d.gender.toLowerCase()=="male")?medals_opacity:opacity })
 
 
       button.text(g==0?"Males":"Females")
     }
     
-var button = d3.select('body')
-  .append('button')
-  .text('Females')
-  .on('click', function() {
-    console.log('click')
-    clicks+=1;
-    updateChart(clicks%2==0)
-})
+    function highlightSports(s)
+    {
+        
+        d3.select('svg')
+            .selectAll('circle')
+            .data(genderData)
+            .attr('opacity', function(d, i){if(s==d.sport) {return medals_opacity} else{return 0.1}})
+//            .attr('opacity', function(d, i){if(s==d.sport) {return medals_opacity} else{return opacity}})
+            
+        
+    }
+    
+    var button = d3.select('body')
+      .append('button')
+      .text('Females')
+      .on('click', function() {
+        console.log('click')
+        clicks+=1;
+        updateChart(clicks%2==0)
+      })
+        
 }
