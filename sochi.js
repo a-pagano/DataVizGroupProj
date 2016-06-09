@@ -3,9 +3,9 @@ var data = d3.csv('athletes_sochi.csv', readData);
 function readData(err, data)
 {
     var clicks = 0;
-    var gutter = 50
-    var canvas_width = document.getElementById("canvas").attributes.width.nodeValue
-    var canvas_height = document.getElementById("canvas").attributes.height.nodeValue-gutter
+    var gutter = 40
+    var canvas_width = document.getElementById("canvas").attributes.width.nodeValue-(gutter*3)
+    var canvas_height = document.getElementById("canvas").attributes.height.nodeValue-(gutter*2)
     var size = 8
     var medals_size = 10
     var opacity = .25
@@ -21,7 +21,7 @@ function readData(err, data)
           'freestyle skiing':'green' ,
           'snowboard': 'gray' ,
           'short track': 'darkblue',
-          'figure skating': 'pink' ,
+          //'figure skating': 'pink' , -- Weight not recorded for figure skaters, so data completely filtered-out
           'alpine skiing': 'limegreen',
           'nordic combined': 'cyan',
           'cross-country': 'orange',
@@ -50,26 +50,59 @@ function readData(err, data)
     
     function filterByGender(g)
     {
+/*
         var byGender;
         //0==male
         if (g==0)  byGender = data.filter(function(d) { return (d.gender.toLowerCase()=="male")?true:false })
-        else  byGender = data.filter(function(d) { return (d.gender.toLowerCase()=="female")?true:false })
-        return byGender;
+        else if (g==1) byGender = data.filter(function(d) { return (d.gender.toLowerCase()=="female")?true:false })
+        else byGender = data //Everyone
+*/
+        for (var i=0; i<data.length; i++)
+        {
+            var d = data[i]
+            d.filter = true
+            if (g==0 && d.gender.toLowerCase()=='male') d.filter = false
+            else if (g==1 && d.gender.toLowerCase()=='female') d.filter = false;
+            else if (g==-1) d.filter = false
+        }
+        //console.log(byGender.length)
+        
+        //return byGender;
     }
-console.log(colors)
-    var title_text = 'Sochi Olympics: Female Athletes'
-    var genderData = filterByGender(1)
+    
+    function trendlineByGender(g)
+    {
+        var xb = {}
+        if (g==0) xb = { x:0.0039, b:1.4947 }; // male
+        else if (g==1) xb = { x:0.0073, b:1.2182 } // female
+        else if (g==-1) xb = { x:0.0055, b:1.3553 } // all
+        return { x1:minWeight, x2:maxWeight, y1:minWeight*xb.x + xb.b, y2:maxWeight*xb.x + xb.b }
+    }
+    var trendline = trendlineByGender(-1)
+    
+    var title_text = 'Sochi Olympics: All Athletes'
+
     var plot = d3.select('svg')
+    
+
     var title = plot.append('g')
-      .attr('transform','translate('+((canvas_width/2)-((title_text.length*20)/2))+',30)')
+      .attr('transform','translate('+((canvas_width/2)-((title_text.length*10)/2))+',30)')
       .append('text')
       .text(title_text)
       .attr("font-size", "30px") 
       .attr("fill","black")
       .attr('font-family','Courier New')
     
+    var subtitle = plot.append('g')
+      .attr('transform','translate('+((canvas_width/2)-((title_text.length*15)/2))+',50)')
+      .append('text')
+      .text("Do height and weight provide competitive advantage in different sports?")
+      .attr("font-size", "15px") 
+      .attr("fill","black")
+      .attr('font-family','Courier New')
+
     var plot_legend = plot.append('g')
-      .attr('transform','translate(-40,10)')
+      .attr('transform','translate('+(gutter)+',1)')
       .selectAll('g')
       .data(Object.keys(colors).sort())
       .enter()
@@ -78,20 +111,48 @@ console.log(colors)
       .attr('width','20')
       .attr('height','20')
       .attr('fill',function(d,i) { return colors[d] })
-      .attr('x',50)
+      .attr('x',gutter+10)
       .attr('y',function(d,i) { return (i*21) })
+      .on('mouseenter', function(d, i) { highlightSports(d,true) })
+      .on('mouseleave', function(d, i) { highlightSports(d,false) })
+
     plot_legend.append('text')
       .text(function(d,i) { return d })
-      .attr('x',75)
+      .attr('x',gutter+35)
       .attr('y',function(d,i) { return 15+(i*21) })
       .attr("font-size", "18px") 
       .attr("fill","black")
       .attr('font-family','Courier New')
+   
+    plot_legend.append('circle')
+        .attr('r',size)
+        .attr('stroke','black')
+        .attr('stroke-width','3')
+        .attr('fill','none')
+        .attr('cx',gutter+20)
+        .attr('cy',(15+(Object.keys(colors).length*21)))
     
+    plot_legend.append('text')
+      .text("Medal Winner")
+      .attr('x',gutter+35)
+      .attr('y',(20+(Object.keys(colors).length*21)))
+      .attr("font-size", "18px") 
+      .attr("fill","black")
+      .attr('font-family','Courier New')
+
+    var plot_trendline = plot.append('g')
+      .attr('transform','translate('+((gutter*2)+size)+','+size+')')
+      .append('line')
+      .attr('x1',scaleWeight(trendline.x1))
+      .attr('x2',scaleWeight(trendline.x2))
+      .attr('y1',scaleHeight(trendline.y1))
+      .attr('y2',scaleHeight(trendline.y2))
+      .style('stroke','black')
+
     var plot_area = plot.append('g')
-      .attr('transform','translate('+(50+size)+','+size+')')
+      .attr('transform','translate('+((gutter*2)+size)+','+size+')')
       .selectAll('circle')
-      .data(genderData)
+      .data(data)
       .enter()
       .append('circle')
       .attr('opacity',function(d,i) { return Number(d.total_medals)>0?medals_opacity:opacity })
@@ -101,64 +162,102 @@ console.log(colors)
       .attr('fill',function(d,i) { return colors[String(d.sport).toLowerCase()]  })
       .style('stroke',function(d,i) { return Number(d.total_medals)>0?'black':'none' })
       .style('stroke-width',function(d,i) { return Number(d.total_medals)>0?'3':'0' })
-
-        .on('mouseenter', function(d, i) {
-            highlightSports(d.sport)
-        })
-        .on('mouseleave', function(d, i) {
-            d3.select('svg')
-            .selectAll('circle')
-            .data(genderData)
-            .attr('opacity',function(d,i) { return Number(d.total_medals)>0?medals_opacity:opacity })
-        })
+      .on('mouseenter', function(d, i) { highlightSports(d.sport,true) })
+      .on('mouseleave', function(d, i) { highlightSports(d.sport,false) })
         
+            
+    var axy = d3.svg.axis().scale(scaleHeight).orient('left')  
+    var axx = d3.svg.axis().scale(scaleWeight).orient('bottom')  
     
-      
+    d3.select('svg')
+      .append('g')
+      .attr('transform','translate('+(gutter*2)+',20)')
+      .call(axy)
+      .append('g')
+      .attr('transform','rotate(-90)')
+      .append('text')
+      .text('Height (m)')
+      .attr('y',-gutter-15)
+      .attr('x',-canvas_height/2)
+      .style('stroke','black')
+
+
+    d3.select('svg')
+      .append('g')
+      .attr('transform','translate('+(gutter*2)+','+(canvas_height+20)+')')
+      .call(axx)
+      .append('g')
+      .append('text')
+      .text('Weight (kg)')
+      .attr('y',gutter)
+      .attr('x',canvas_width/2)
+      .style('stroke','black')
 
     
-
     function updateChart(g)
     {
-      genderData = filterByGender(g)
-      
-      plot_area.data(genderData)
-          .transition()
+      trendline = trendlineByGender(g)
+      filterByGender(g)
+      plot_area.transition()
           .duration(1000)
-          .attr('r',function(d,i) { return Number(d.total_medals)>0?medals_size:size })
+          .attr('r',function(d,i) 
+                { 
+                    if (d.filter) return 0;
+                    else return Number(d.total_medals)>0?medals_size:size 
+                })
           .attr('cy',function(d,i) { return scaleHeight(d.height) })
           .attr('cx',function(d,i) { return scaleWeight(d.weight) })
           .attr('fill',function(d,i) { return colors[String(d.sport).toLowerCase()]  })
           .style('stroke',function(d,i) { return Number(d.total_medals)>0?'black':'none' })
           .style('stroke-width',function(d,i) { return Number(d.total_medals)>0?'3':'0' })
-
           .attr('opacity',function(d,i) { return Number(d.total_medals)>0?medals_opacity:opacity })
       
-      title_text = g==0?'Sochi Olympics: Male Athletes':'Sochi Olympics: Female Athletes'
+      plot_trendline.transition()
+        .duration(1000)
+      .attr('x1',scaleWeight(trendline.x1))
+      .attr('x2',scaleWeight(trendline.x2))
+      .attr('y1',scaleHeight(trendline.y1))
+      .attr('y2',scaleHeight(trendline.y2))
+      
+      
+      var gender_str = 'All'
+      if (g==0) gender_str = 'Male'
+      else if (g==1) gender_str = 'Female'
+      title_text = 'Sochi Olympics: '+gender_str+' Athletes'
       title.text(title_text)
+      if (g != -1) button.text(g==0?"View by Females":"View by Males")
+    }
 
+    function highlightSports(s,highlight)
+    {
+        d3.select('svg')
+          .selectAll('circle')
+          .attr('opacity', function(d, i) 
+            { 
+                if (typeof d.sport=="undefined") return 1; // This is weird...select all circles gets the legend circle too...
+                if (highlight) return s.toLowerCase()==d.sport.toLowerCase()?medals_opacity:0.05
+                else return Number(d.total_medals)>0?medals_opacity:opacity        
+            })
+        d3.select('svg')
+          .selectAll('rect')
+          .style('stroke',function(d,i) { return highlight && s.toLowerCase()==d.toLowerCase()?'black':'none' })
+          .style('stroke-width',function(d,i) { return highlight && s.toLowerCase()==d.toLowerCase()?'3':'0' })
 
-      button.text(g==0?"Males":"Females")
     }
     
-    function highlightSports(s)
-    {
-        
-        d3.select('svg')
-            .selectAll('circle')
-            .data(genderData)
-            .attr('opacity', function(d, i){if(s==d.sport) {return medals_opacity} else{return 0.1}})
-//            .attr('opacity', function(d, i){if(s==d.sport) {return medals_opacity} else{return opacity}})
-            
-        
-    }
     
     var button = d3.select('body')
       .append('button')
-      .text('Females')
+      .text('View by Males')
       .on('click', function() {
-        console.log('click')
+        updateChart(clicks%2)
         clicks+=1;
-        updateChart(clicks%2==0)
+
       })
+    d3.select('body')
+      .append('button')
+      .text('View by Everyone')
+      .on('click', function() { updateChart(-1) })
+      
         
 }
