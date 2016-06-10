@@ -15,6 +15,7 @@ function readData(err, data)
         if (Number(d.weight) > 0 && Number(d.height) > 0 && String(d.sport).length > 0 && String(d.gender).length > 0) return true;
         else return false;
     })
+    
 
     var colors = 
       {
@@ -78,6 +79,28 @@ function readData(err, data)
         else if (g==-1) xb = { x:0.0055, b:1.3553 } // all
         return { x1:minWeight, x2:maxWeight, y1:minWeight*xb.x + xb.b, y2:maxWeight*xb.x + xb.b }
     }
+    
+    
+    function sortByBMIstd(g)
+    {
+        var stdBMI = d3.nest()
+                        .key(function(d, i){ return d.sport})
+                        .rollup(function(d, i) { return calculateDevBMI(d)})
+                        .entries(g)
+        return stdBMI
+        
+    }
+    
+    function calculateDevBMI(g)
+    {
+        var BMI = []
+        for (i=0; i<g.length; i++){
+            BMI.push((g[i].weight)/(g[i].height)^2)
+        }
+        return d3.deviation(BMI)   
+    }
+    
+    
     var trendline = trendlineByGender(-1)
     
     var title_text = 'Sochi Olympics: All Athletes'
@@ -101,10 +124,22 @@ function readData(err, data)
       .attr("fill","black")
       .attr('font-family','Courier New')
 
+    var devBMI = sortByBMIstd(data)
+    var sportArray = {}
+    for (i=0; i<devBMI.length; i++){
+        sportArray[devBMI[i].key] = devBMI[i].values
+    }
+    //console.log(sportArray)
+    
     var plot_legend = plot.append('g')
       .attr('transform','translate('+(gutter)+',1)')
       .selectAll('g')
-      .data(Object.keys(colors).sort())
+        
+    var A =  Object.keys(sportArray).map(function (key) {return sportArray[key]});
+    console.log(sportArray[sportArray==A.sort())
+        
+            
+      .data(Object.keys(colors).sort(function(a, b){return sportArray[a.toUpperCase()]-sportArray[b.toUpperCase()]}))
       .enter()
       .append('g')
     plot_legend.append('rect')
