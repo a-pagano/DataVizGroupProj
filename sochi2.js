@@ -17,6 +17,7 @@ function readData(err, data)
     })
     
     data.sort(function(a,b) { return a.total_medals - b.total_medals })
+/*
     var sports = 
         [
           { sport:'freestyle skiing', color:'green'} ,
@@ -35,6 +36,26 @@ function readData(err, data)
           { sport:'skeleton', color:'darkgoldenrod'},
           { sport:'ski jumping', color:'cadetblue'}
         ]
+*/
+    var sports = 
+        [
+          { sport:'freestyle skiing', color:'#68FE44'} ,    //2 
+          { sport:'snowboard', color:'#44FE90'} ,           //2
+          { sport:'short track', color:'#ABB0F9'},          //1
+          { sport:'alpine skiing', color:'#CA67BE'},        //3
+          { sport:'nordic combined', color:'#ABECF9'},      //1
+          { sport:'cross-country', color:'#A1FE44'},        //2
+          { sport:'curling', color:'#BB67CA'},              //3
+          { sport:'biathlon', color:'#ABD9F9'},             //1
+          { sport:'luge', color:'#924088'},                 //3
+          { sport:'ice hockey', color:'#EC7254'},           //4
+          { sport:'bobsleigh', color:'#AB462D'},            //4
+          { sport:'speed skating', color:'#44FE57'},        //2
+          { sport:'skeleton', color:'#DC90FF'},             //3
+          { sport:'ski jumping', color:'#ABF9F5'}           //1
+        ]
+
+
     function getSport(s) 
     {
       for (var i=0; i<sports.length; i++) if(sports[i].sport==s.toLowerCase()) return sports[i]; 
@@ -49,9 +70,10 @@ function readData(err, data)
         
         for (var i=0; i<data.length; i++)
         {
-            mbis[i] = data[i].weight / Math.pow(data[i].height,2)
-            if (data[i].gender.toLowerCase()=="male") mbis_m[mbis_m.length] = mbis[i]
-            else if (data[i].gender.toLowerCase()=="female") mbis_f[mbis_f.length] = mbis[i]
+            if (data[i].sport.toLowerCase() != s) continue;
+            mbis[mbis.length] = data[i].weight / Math.pow(data[i].height,2)
+            if (data[i].gender.toLowerCase()=="male") mbis_m[mbis_m.length] = mbis[mbis.length]
+            else if (data[i].gender.toLowerCase()=="female") mbis_f[mbis_f.length] = mbis[mbis.length]
         }
         sport.avg_bmi = arr.mean(mbis)
         sport.sd_bmi = arr.standardDeviation(mbis)
@@ -63,7 +85,7 @@ function readData(err, data)
     
     for (var i=0; i<sports.length; i++) { getStats(sports[i].sport); }
 
-    sports.sort(function(a,b) { return b.sd_bmi - a.sd_bmi })
+    //sports.sort(function(a,b) { return b.sd_bmi - a.sd_bmi })
 
     
     var maxWeight = d3.max(data,function(d,i) { return Number(d.weight); });
@@ -81,6 +103,17 @@ function readData(err, data)
 
     function filterByGender(g)
     {
+/*
+//BY ST DEV
+        if (g==0) sports.sort(function(a,b) { return a.sd_bmi_m - b.sd_bmi_m })
+        else if (g==1) sports.sort(function(a,b) { return a.sd_bmi_f - b.sd_bmi_f })
+        else sports.sort(function(a,b) { return a.sd_bmi - b.sd_bmi })
+*/
+//BY AVG
+        
+        if (g==0) sports.sort(function(a,b) { return a.avg_bmi_m - b.avg_bmi_m })
+        else if (g==1) sports.sort(function(a,b) { return a.avg_bmi_f - b.avg_bmi_f })
+        else sports.sort(function(a,b) { return a.avg_bmi - b.avg_bmi })
 
         for (var i=0; i<data.length; i++)
         {
@@ -104,6 +137,8 @@ function readData(err, data)
         return { x1:minWeight, x2:maxWeight, y1:minWeight*xb.x + xb.b, y2:maxWeight*xb.x + xb.b }
     }
     var trendline = trendlineByGender(-1)
+    
+    filterByGender(-1)
     
     var title_text = 'Sochi Olympics: All Athletes'
 
@@ -132,7 +167,8 @@ function readData(err, data)
       .data(sports)
       .enter()
       .append('g')
-    plot_legend.append('rect')
+    
+    var plot_legend_rect = plot_legend.append('rect')
       .attr('width','20')
       .attr('height','20')
       .attr('fill',function(d,i) { return d.color })
@@ -141,7 +177,7 @@ function readData(err, data)
       .on('mouseenter', function(d, i) { highlightSports(d.sport,true) })
       .on('mouseleave', function(d, i) { highlightSports(d.sport,false) })
 
-    plot_legend.append('text')
+    var plot_legend_text = plot_legend.append('text')
       .text(function(d,i) { return d.sport })
       .attr('x',gutter+35)
       .attr('y',function(d,i) { return 15+(i*21) })
@@ -224,10 +260,7 @@ function readData(err, data)
       trendline = trendlineByGender(g)
       filterByGender(g)
 
-      if (g==0) sports.sort(function(a,b) { return b.sd_bmi_m - a.sd_bmi_m })
-      else if (g==1) sports.sort(function(a,b) { return b.sd_bmi_f - a.sd_bmi_f })
-      else sports.sort(function(a,b) { return b.sd_bmi - a.sd_bmi })
-
+console.log(sports)
       plot_area.transition()
           .duration(1000)
           .attr('r',function(d,i) 
@@ -249,14 +282,14 @@ function readData(err, data)
       .attr('y1',scaleHeight(trendline.y1))
       .attr('y2',scaleHeight(trendline.y2))
      
-   plot_legend.selectAll('rect').transition()
+   plot_legend_rect.data(sports).transition()
       .duration(1000)
       .attr('fill',function(d,i) { return d.color })
-/*
-    plot_legend.transition()
+
+    plot_legend_text.data(sports).transition()
       .duration(1000)
       .text(function(d,i) { return d.sport })
-*/
+
       
       var gender_str = 'All'
       if (g==0) gender_str = 'Male'
