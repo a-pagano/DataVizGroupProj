@@ -134,11 +134,6 @@ function readData(err, data)
     var plot_legend = plot.append('g')
       .attr('transform','translate('+(gutter)+',1)')
       .selectAll('g')
-        
-    var A =  Object.keys(sportArray).map(function (key) {return sportArray[key]});
-    console.log(sportArray[sportArray==A.sort())
-        
-            
       .data(Object.keys(colors).sort(function(a, b){return sportArray[a.toUpperCase()]-sportArray[b.toUpperCase()]}))
       .enter()
       .append('g')
